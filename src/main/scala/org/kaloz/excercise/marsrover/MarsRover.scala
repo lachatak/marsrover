@@ -16,12 +16,10 @@ object MarsExpedition extends MarsExpeditionConfigurationParser {
     //    val input = if (args.length == 1) scala.io.Source.fromInputStream(getClass.getClassLoader.getResourceAsStream(args(0))).mkString else defaultInput
     val input = scala.io.Source.fromInputStream(getClass.getClassLoader.getResourceAsStream(if (args.length == 1) args(0) else "input.txt")).mkString
     parseAll(marsExpeditionConfiguration, input) match {
-      case Success(mec, _) => MarsExpedition(mec).startExpedition
+      case Success(mec, _) => new MarsExpedition(mec).startExpedition
       case x => println(x)
     }
   }
-
-  def apply(configuration: MarsExpeditionConfiguration) = new MarsExpedition(configuration)
 }
 
 class MarsExpedition(val configuration: MarsExpeditionConfiguration) {
@@ -37,27 +35,29 @@ class MarsExpedition(val configuration: MarsExpeditionConfiguration) {
 
 class NasaHQ extends Actor with ActorLogging {
 
-  var marsRoversToControllers = Map.empty[ActorRef, ActorRef]
+  var marsRoverToController = Map.empty[ActorRef, ActorRef]
+  var controllerToMarsRover = Map.empty[ActorRef, ActorRef]
+
+  val display = context.actorOf(Props[Display], name = "Display")
+  var disaster = false
 
   def receive = {
     case StartExpedition(roverConfigurations) =>
       log.info(s"Nasa expedition has started with rover configuration $roverConfigurations")
       deployMarsRovers(roverConfigurations)
     case RoverDeployed =>
-      log.info(s"$sender mars rover has been deployed, sending start action")
-      marsRoversToControllers.get(sender).get ! StartRover
-    case Position(roverPosition) =>
-      log.info(s"Nasa processed rover position $roverPosition")
-    case Terminated(marsRoverController) => marsRoversToControllers.foreach {
-      case (rover, controller) =>
-        if (marsRoverController eq controller) {
-          marsRoversToControllers = marsRoversToControllers - rover
-          if (marsRoversToControllers.isEmpty) {
-            self ! PoisonPill
-            log.info("Nasa expedition has been finished!")
-          }
-        }
-    }
+      log.info(s"${sender.path.name} has been deployed, sending start action via its Controller")
+      marsRoverToController.get(sender).get ! StartRover
+    case Disaster =>
+      log.info(s"Disaster happaned with ${controllerToMarsRover.get(sender).get.path.name}!")
+      disaster = true
+    case Terminated(marsRoverController) =>
+      controllerToMarsRover = controllerToMarsRover - marsRoverController
+      if (controllerToMarsRover.isEmpty) {
+        display ! ShowPositions
+        context.parent ! PoisonPill
+        log.info(s"Nasa expedition has been finished ${ if(disaster) "with disaster" else "successfully"}!")
+      }
   }
 
   private def deployMarsRovers(roverConfigurations: List[RoverConfiguration]) {
@@ -65,35 +65,67 @@ class NasaHQ extends Actor with ActorLogging {
     roverConfigurations.foreach(rc => {
       count = count + 1
       val marsRover = context.actorOf(Props(classOf[MarsRover], rc.roverPosition), name = s"marsRover-$count")
-      log.info(s"Nasa deploys $marsRover")
-      val marsRoverController = context.actorOf(Props(classOf[MarsRoverController], rc.actions, marsRover), name = s"marsRoverController-$count")
-      log.info(s"Nasa start controller $marsRoverController for $marsRover")
-      marsRoversToControllers += (marsRover -> marsRoverController)
+      log.info(s"Nasa deploys ${marsRover.path.name} to ${rc.roverPosition}")
+      val marsRoverController = context.actorOf(Props(classOf[MarsRoverController], rc.actions, marsRover, display), name = s"marsRoverController-$count")
+      context.watch(marsRoverController)
+      log.info(s"Nasa start ${marsRoverController.path.name} for ${marsRover.path.name}")
+      marsRoverToController += (marsRover -> marsRoverController)
       marsRover ! DeployRover
     })
+    controllerToMarsRover = marsRoverToController map {
+      _.swap
+    }
   }
 }
 
-class MarsRoverController(var roverActions: List[Action.Value], marsRover: ActorRef) extends Actor with ActorLogging {
+case class StartExpedition(val roverConfigurations: List[RoverConfiguration])
+
+case object DeployRover
+
+case object RoverDeployed
+
+case object StartRover
+
+class Display extends Actor with ActorLogging {
+
+  var roverPositions = Map.empty[ActorRef, RoverPosition]
+
+  def receive = {
+    case RegisterPosition(marsRover, roverPosition) =>
+      log.info(s"Register $roverPosition to ${marsRover.path.name}")
+      roverPositions += (marsRover -> roverPosition)
+    case ShowPositions =>
+      roverPositions.foreach {
+        case (marsRover, position) => log.info(s"Final position of ${marsRover.path.name} is $position")
+      }
+  }
+}
+
+case class RegisterPosition(marsRover: ActorRef, roverPosition: RoverPosition)
+
+case object ShowPositions
+
+class MarsRoverController(var roverActions: List[Action.Value], val marsRover: ActorRef, val display: ActorRef) extends Actor with ActorLogging {
 
   context.watch(marsRover)
 
   def receive = {
     case StartRover =>
-      log.info(s"Controller starts rover $marsRover")
+      log.info(s"Controller starts ${marsRover.path.name}")
       sendNextAction
     case Position(roverPosition) =>
-      log.info(s"Controller acknowledged position $roverPosition from $marsRover")
-      context.parent ! Position(roverPosition)
+      log.info(s"Controller acknowledged $roverPosition from ${marsRover.path.name}")
+      display ! RegisterPosition(marsRover, roverPosition)
       sendNextAction
     case Terminated(marsRover) =>
-      log.info(s"TERMINATED $marsRover")
+      log.info(s"TERMINATED ${marsRover.path.name}")
+      context.parent ! Disaster
       self ! PoisonPill
   }
 
   private def sendNextAction {
     if (!roverActions.isEmpty) {
-      log.info(s"Controller send action ${roverActions.head} to $marsRover")
+      log.info(s"Controller send action ${roverActions.head} to ${marsRover.path.name}")
       marsRover ! RoverAction(roverActions.head)
       roverActions = roverActions.tail
     } else {
@@ -103,10 +135,13 @@ class MarsRoverController(var roverActions: List[Action.Value], marsRover: Actor
   }
 }
 
-trait Configuration {
-  def movementSpeed = 300 millis
+case class RoverAction(val action: Action.Value)
+case object Disaster
 
-  def turningSpeed = 1 second
+trait Configuration {
+  def movementSpeed = 100 millis
+
+  def turningSpeed = 100 millis
 }
 
 class MarsRover(var roverPosition: RoverPosition) extends Actor with Configuration with ActorLogging {
@@ -159,37 +194,27 @@ class MarsRover(var roverPosition: RoverPosition) extends Actor with Configurati
 
 }
 
+case class Position(val position: RoverPosition)
+
 class Plateau(val plateuaConfigarutaion: PlateauConfiguration) extends Actor with ActorLogging {
 
   var roverPositions = Map.empty[ActorRef, RoverPosition]
 
   def receive = {
-    case Position(position) =>
-      roverPositions += (sender -> position)
-      if (roverPositions.values.filter(_ == position).size > 1) {
+    case Position(roverPosition) =>
+      roverPositions += (sender -> roverPosition)
+      if (roverPositions.values.filter(_ == roverPosition).size > 1) {
         roverPositions.foreach {
-          case (rover: ActorRef, position: RoverPosition) =>
-            log.info(s"$rover mars rover has collided at $position")
-            rover ! Collusion
+          case (marsRover: ActorRef, position: RoverPosition) =>
+            log.info(s"${marsRover.path.name} has collided at $position")
+            marsRover ! Collusion
         }
       } else {
-        log.info(s"$sender mars rover position at $position is safe")
+        log.info(s"${sender.path.name} position at $roverPosition is safe")
         sender ! Ack
       }
   }
 }
-
-case class StartExpedition(val roverConfigurations: List[RoverConfiguration])
-
-case object DeployRover
-
-case object RoverDeployed
-
-case object StartRover
-
-case class RoverAction(val action: Action.Value)
-
-case class Position(val position: RoverPosition)
 
 case object Collusion
 
@@ -289,16 +314,3 @@ case class RoverPosition(val x: Integer, val y: Integer, val facing: Facing.Valu
 case class RoverConfiguration(val roverPosition: RoverPosition, val actions: List[Action.Value])
 
 case class MarsExpeditionConfiguration(val definePlateau: PlateauConfiguration, val roverConfigurations: List[RoverConfiguration])
-
-object TestLoopParser extends MarsExpeditionConfigurationParser with App {
-  val input = """|5 5
-                |1 2 N
-                |LMLMLMLMM
-                |3 3 E
-                |MMRMMRMRRM""".stripMargin
-
-  parseAll(marsExpeditionConfiguration, input) match {
-    case Success(lup, _) => println(lup)
-    case x => println(x)
-  }
-}
