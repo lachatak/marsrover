@@ -48,12 +48,14 @@ class NasaHQ extends Actor with ActorLogging {
       marsRoversToControllers.get(sender).get ! StartRover
     case Position(roverPosition) =>
       log.info(s"Nasa processed rover position $roverPosition")
-    case Terminated(marsRoverController:MarsRoverController) => marsRoversToControllers.foreach {
-      case (rover: ActorRef, controller: ActorRef) if (marsRoverController eq controller) =>
-        marsRoversToControllers = marsRoversToControllers - controller
-        if (marsRoversToControllers.isEmpty) {
-          self ! PoisonPill
-          log.info("Nasa expedition has been finished!")
+    case Terminated(marsRoverController) => marsRoversToControllers.foreach {
+      case (rover, controller) =>
+        if (marsRoverController eq controller) {
+          marsRoversToControllers = marsRoversToControllers - rover
+          if (marsRoversToControllers.isEmpty) {
+            self ! PoisonPill
+            log.info("Nasa expedition has been finished!")
+          }
         }
     }
   }
@@ -65,7 +67,7 @@ class NasaHQ extends Actor with ActorLogging {
       val marsRover = context.actorOf(Props(classOf[MarsRover], rc.roverPosition), name = s"marsRover-$count")
       log.info(s"Nasa deploys $marsRover")
       val marsRoverController = context.actorOf(Props(classOf[MarsRoverController], rc.actions, marsRover), name = s"marsRoverController-$count")
-      context.watch(marsRoverController)
+      log.info(s"Nasa start controller $marsRoverController for $marsRover")
       marsRoversToControllers += (marsRover -> marsRoverController)
       marsRover ! DeployRover
     })
