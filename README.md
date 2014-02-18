@@ -37,3 +37,11 @@ MMRMMRMRRM
 Expected Output:
 1 3 N
 5 1 E
+
+Extended requirements:
+
+After parsing the configuration the rovers should move simultaneously.
+Every action type has its own required time. It makes the simulation more realistic.
+It is possible that two rovers collide. In this case both of them should break down and won't react on any subsequent commands.
+If a rover leaves the plateau it disappears and doesn't answer for instructions.
+After the mars rover expedition NASA should provide a report how the expedition ended. It is just a simple textual report summarizing the result. Was it successful or something unexpected happened like collusion or some rovers are missing.
