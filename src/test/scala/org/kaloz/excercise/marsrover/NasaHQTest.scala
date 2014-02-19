@@ -5,9 +5,13 @@ import org.specs2.specification.AllExpectations
 import org.specs2.mock.Mockito
 import org.junit.runner.RunWith
 import org.specs2.runner.JUnitRunner
-import akka.actor.{ActorRef, ActorSystem, Props, Actor}
+import akka.actor._
 import akka.testkit.{TestActorRef, TestProbe}
 import org.kaloz.excercise.marsrover.NasaHQ.StartExpedition
+import org.kaloz.excercise.marsrover.NasaHQ.StartExpedition
+import scala.Predef._
+import org.kaloz.excercise.marsrover.NasaHQ.StartExpedition
+import org.kaloz.excercise.marsrover.NasaHQ
 
 @RunWith(classOf[JUnitRunner])
 class NasaHQTest extends Specification with AllExpectations with Mockito {
@@ -19,17 +23,8 @@ class NasaHQTest extends Specification with AllExpectations with Mockito {
 
       val probe = TestProbe()
 
-      trait TestDisplayProvider extends DisplayProvider{
-        this:Actor =>
-        implicit val system = context.system
-        val display = probe.ref
-      }
-
-
-      val actor = system.actorOf(Props(new NasaHQ with TestDisplayProvider))
-
-      val NasaHQ = TestActorRef[TestNasaHQ]
-
+      val displayActorFactory = (actorFactory:ActorRefFactory, props:Props, name:String) => probe.ref
+      val NasaHQ = TestActorRef(new NasaHQ(displayActorFactory))
 
       NasaHQ ! StartExpedition
 
@@ -37,5 +32,3 @@ class NasaHQTest extends Specification with AllExpectations with Mockito {
     }
   }
 }
-
-class TestNasaHQ extends NasaHQ with TestDisplayProvider

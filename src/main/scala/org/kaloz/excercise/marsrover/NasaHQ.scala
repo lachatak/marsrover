@@ -2,15 +2,14 @@ package org.kaloz.excercise.marsrover
 
 import akka.actor._
 
-class NasaHQ extends Actor with ActorLogging {
-
-  this:DisplayProvider =>
+class NasaHQ(displayActorFactory: (ActorRefFactory, Props, String) => ActorRef) extends Actor with ActorLogging {
 
   import NasaHQ._
   import MarsRoverController._
   import Display._
 
 //  val display = context.actorOf(Props[Display], name = "Display")
+  val display = displayActorFactory(context, Props[Display], "Display")
 
   var controllers = List.empty[ActorRef]
   var disaster = false
