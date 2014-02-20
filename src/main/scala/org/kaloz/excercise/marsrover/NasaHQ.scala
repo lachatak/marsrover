@@ -2,22 +2,27 @@ package org.kaloz.excercise.marsrover
 
 import akka.actor._
 
-class NasaHQ(displayActorFactory: (ActorRefFactory, Props, String) => ActorRef) extends Actor with ActorLogging {
+class NasaHQ(implicit actorFactory: (ActorRefFactory, Props, String) => ActorRef) extends Actor with ActorLogging {
 
   import NasaHQ._
   import MarsRoverController._
   import Display._
 
-//  val display = context.actorOf(Props[Display], name = "Display")
-  val display = displayActorFactory(context, Props[Display], "Display")
+  val display = actorFactory(context, Display.props, "Display")
 
   var controllers = List.empty[ActorRef]
   var disaster = false
 
-  def receive = {
+  context.become(idle)
+
+  def idle: Receive = {
     case StartExpedition(roverConfigurations) =>
       log.info(s"Nasa expedition has started with rover configuration $roverConfigurations")
       deployMarsRovers(roverConfigurations)
+      context.become(receive)
+  }
+
+  def receive = {
     case Disaster(marsRover) =>
       log.info(s"Disaster happaned with ${marsRover.path.name}! May be broken down or got lost!")
       disaster = true
@@ -34,7 +39,7 @@ class NasaHQ(displayActorFactory: (ActorRefFactory, Props, String) => ActorRef) 
     var count = 0
     roverConfigurations.foreach(rc => {
       count = count + 1
-      val marsRoverController = context.actorOf(Props(classOf[MarsRoverController], rc, display), name = s"marsRoverController-$count")
+      val marsRoverController = actorFactory(context, MarsRoverController.props(rc, display), s"marsRoverController-$count")
       context.watch(marsRoverController)
       controllers = marsRoverController :: controllers
     })
@@ -43,17 +48,8 @@ class NasaHQ(displayActorFactory: (ActorRefFactory, Props, String) => ActorRef) 
 
 object NasaHQ {
 
+  def props(actorFactory: (ActorRefFactory, Props, String) => ActorRef): Props = Props(classOf[NasaHQ], actorFactory)
+
   case class StartExpedition(roverConfigurations: List[RoverConfiguration])
 
-}
-
-trait DisplayProvider{
-
-  def display:ActorRef
-}
-
-trait ProductionDisplayProvider extends DisplayProvider{
-  this:Actor =>
-
-  val display = context.actorOf(Props[Display], name = "Display")
 }

@@ -8,8 +8,10 @@ class MarsRoverController(roverConfigurations: RoverConfiguration, display: Acto
   import MarsRoverController._
   import Display._
 
-  val marsRover = context.actorOf(Props(classOf[MarsRover], roverConfigurations.roverPosition, self), name = s"marsRover-${extractCounter}")
+  val marsRover = context.actorOf(MarsRover.props(roverConfigurations.roverPosition), name = s"marsRover-${extractCounter}")
+
   var roverActions = roverConfigurations.actions
+
   context.watch(marsRover)
   log.info(s"Deploying ${marsRover.path.name} to ${roverConfigurations.roverPosition}")
   marsRover ! DeployRover
@@ -43,6 +45,8 @@ class MarsRoverController(roverConfigurations: RoverConfiguration, display: Acto
 }
 
 object MarsRoverController {
+
+  def props(roverConfigurations: RoverConfiguration, display: ActorRef): Props = Props(classOf[MarsRoverController], roverConfigurations, display)
 
   case object DeployRover
 

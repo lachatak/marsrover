@@ -1,6 +1,6 @@
 package org.kaloz.excercise.marsrover
 
-import akka.actor.{ActorRef, ActorLogging, Actor}
+import akka.actor._
 
 class Display extends Actor with ActorLogging {
 
@@ -20,6 +20,8 @@ class Display extends Actor with ActorLogging {
 }
 
 object Display {
+
+  def props: Props = Props(classOf[Display])
 
   case object ShowPositions
 

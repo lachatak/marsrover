@@ -1,8 +1,6 @@
 package org.kaloz.excercise.marsrover
 
-import akka.actor
-import akka.actor.{ActorRefFactory, ActorSystem, Props}
-import org.kaloz.excercise.marsrover.{DisplayProvider, NasaHQ}
+import akka.actor._
 
 object MarsExpedition extends MarsExpeditionConfigurationParser {
 
@@ -20,14 +18,11 @@ class MarsExpedition(configuration: MarsExpeditionConfiguration) {
   import org.kaloz.excercise.marsrover.NasaHQ._
 
   val system = ActorSystem("MarsExpedition")
-  val plateau = system.actorOf(Props(classOf[Plateau], configuration.definePlateau), name = "plateau")
-
-  val displayActorFactory = (actorFactory:ActorRefFactory, props:Props, name:String) => actorFactory.actorOf(props, name)
-  val NasaHQ = system.actorOf(Props(classOf[NasaHQ], displayActorFactory), name = "NasaHQ")
+  val plateau = system.actorOf(Plateau.props(configuration.definePlateau), name = "plateau")
+  val actorFactory = (actorFactory:ActorRefFactory, props:Props, name:String) => actorFactory.actorOf(props, name)
+  val nasaHQ = system.actorOf(NasaHQ.props(actorFactory), name = "NasaHQ")
 
   def startExpedition {
-    NasaHQ ! StartExpedition(configuration.roverConfigurations)
+    nasaHQ ! StartExpedition(configuration.roverConfigurations)
   }
 }
-
-//class LiveNasaHQ extends NasaHQ with ProductionDisplayProvider

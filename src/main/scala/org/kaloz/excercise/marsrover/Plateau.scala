@@ -1,8 +1,8 @@
 package org.kaloz.excercise.marsrover
 
-import akka.actor.{ActorRef, ActorLogging, Actor}
+import akka.actor._
 
-class Plateau(plateuaConfigarutaion: PlateauConfiguration) extends Actor with ActorLogging {
+class Plateau(plateauConfigarutaion: PlateauConfiguration) extends Actor with ActorLogging {
 
   import Plateau._
   import MarsRover._
@@ -28,11 +28,13 @@ class Plateau(plateuaConfigarutaion: PlateauConfiguration) extends Actor with Ac
   }
 
   private def getLost(roverPosition: RoverPosition) =
-    if (roverPosition.x < 0 || roverPosition.x > plateuaConfigarutaion.x || roverPosition.y < 0 || roverPosition.y > plateuaConfigarutaion.y) true
+    if (roverPosition.x < 0 || roverPosition.x > plateauConfigarutaion.x || roverPosition.y < 0 || roverPosition.y > plateauConfigarutaion.y) true
     else false
 }
 
 object Plateau {
+
+  def props(plateauConfiguration: PlateauConfiguration): Props = Props(classOf[Plateau], plateauConfiguration)
 
   case object Collusion
 
