@@ -19,7 +19,7 @@ class MarsExpedition(configuration: MarsExpeditionConfiguration) {
 
   val system = ActorSystem("MarsExpedition")
   val plateau = system.actorOf(Plateau.props(configuration.definePlateau), name = "plateau")
-  val actorFactory = (actorFactory:ActorRefFactory, props:Props, name:String) => actorFactory.actorOf(props, name)
+  val actorFactory = (actorFactory: ActorRefFactory, props: Props, name: String) => actorFactory.actorOf(props, name)
   val nasaHQ = system.actorOf(NasaHQ.props(actorFactory), name = "NasaHQ")
 
   def startExpedition {

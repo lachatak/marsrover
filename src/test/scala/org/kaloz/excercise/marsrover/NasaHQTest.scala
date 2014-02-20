@@ -72,7 +72,7 @@ class NasaHQTest extends Specification with AllExpectations {
         controller.ref
     }
     val NasaHQ = TestActorRef(new NasaHQ)
-    
+
     def poisonAllControllers = controllers.foreach(_.ref ! PoisonPill)
   }
 
