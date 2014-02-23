@@ -10,7 +10,7 @@ class MarsRover(roverPosition: RoverPosition) extends Actor with Configuration w
   import MarsRoverController._
   import context.dispatcher
 
-  val plateau: ActorSelection = context.actorSelection("../../../plateau")
+  val plateau = context.actorSelection("/user/plateau")
 
   var roverState = RoverState.UNDER_DEPLOYMENT
   var actualRoverPosition = roverPosition
@@ -51,13 +51,13 @@ class MarsRover(roverPosition: RoverPosition) extends Actor with Configuration w
       }
   }
 
-  object RoverState extends Enumeration {
-    type RoverState = Value
-    val UNDER_DEPLOYMENT, READY, MOVING = Value
-  }
-
   case object EndOfMovement
 
+}
+
+object RoverState extends Enumeration {
+  type RoverState = Value
+  val UNDER_DEPLOYMENT, READY, MOVING = Value
 }
 
 object MarsRover {

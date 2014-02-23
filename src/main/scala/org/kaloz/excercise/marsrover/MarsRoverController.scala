@@ -2,13 +2,13 @@ package org.kaloz.excercise.marsrover
 
 import akka.actor._
 
-class MarsRoverController(roverConfigurations: RoverConfiguration, display: ActorRef) extends Actor with ActorLogging {
+class MarsRoverController(roverConfigurations: RoverConfiguration, display: ActorRef)(implicit actorFactory: (ActorRefFactory, Props, String) => ActorRef) extends Actor with ActorLogging {
 
   import MarsRover._
   import MarsRoverController._
   import Display._
 
-  val marsRover = context.actorOf(MarsRover.props(roverConfigurations.roverPosition), name = s"marsRover-${extractCounter}")
+  val marsRover = actorFactory(context, MarsRover.props(roverConfigurations.roverPosition), s"marsRover-${extractCounter}")
 
   var roverActions = roverConfigurations.actions
 
@@ -46,7 +46,7 @@ class MarsRoverController(roverConfigurations: RoverConfiguration, display: Acto
 
 object MarsRoverController {
 
-  def props(roverConfigurations: RoverConfiguration, display: ActorRef): Props = Props(classOf[MarsRoverController], roverConfigurations, display)
+  def props(roverConfigurations: RoverConfiguration, display: ActorRef)(implicit actorFactory: (ActorRefFactory, Props, String) => ActorRef): Props = Props(classOf[MarsRoverController], roverConfigurations, display, actorFactory)
 
   case object DeployRover
 

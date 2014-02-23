@@ -1,62 +1,83 @@
 package org.kaloz.excercise.marsrover
 
-import org.specs2.mutable.Specification
-import org.specs2.specification.{Scope, AllExpectations}
-import org.junit.runner.RunWith
-import org.specs2.runner.JUnitRunner
+import org.specs2.specification.Scope
 import akka.actor._
-import akka.testkit.{TestActorRef, TestProbe}
+import akka.testkit.{EventFilter, TestKit, TestActorRef, TestProbe}
 import scala.Predef._
 import org.kaloz.excercise.marsrover.Facing._
 import org.kaloz.excercise.marsrover.Action._
 import org.kaloz.excercise.marsrover.NasaHQ.StartExpedition
 import org.kaloz.excercise.marsrover.Display.ShowPositions
 import org.kaloz.excercise.marsrover.MarsRoverController.Disaster
+import org.scalatest.{OneInstancePerTest, BeforeAndAfterAll, WordSpecLike}
 
-@RunWith(classOf[JUnitRunner])
-class NasaHQTest extends Specification with AllExpectations {
+class NasaHQTest extends TestKit(ActorSystem("NasaHQTest"))
+with WordSpecLike
+with BeforeAndAfterAll
+with OneInstancePerTest {
 
-  implicit val system = ActorSystem("MarsExpeditionTest")
+  override def afterAll() {
+    system.shutdown()
+  }
 
   "NasaHQ" should {
     "start be able to start an expedition" in new scope {
 
-      NasaHQ ! StartExpedition(List(RoverConfiguration(RoverPosition(1, 2, N), List(L)), RoverConfiguration(RoverPosition(3, 3, E), List(M))))
+      nasaHQ ! StartExpedition(List(RoverConfiguration(RoverPosition(1, 2, N), List(L)), RoverConfiguration(RoverPosition(3, 3, E), List(M))))
 
-      controllers.size mustEqual 2
+      assert(nasaHQ.underlyingActor.display == display.ref)
+      assert(controllers.size == 2)
     }
 
     "initiate showing positions at the end of simulation" in new scope {
 
-      NasaHQ ! StartExpedition(List(RoverConfiguration(RoverPosition(1, 2, N), List(L)), RoverConfiguration(RoverPosition(3, 3, E), List(M))))
+      nasaHQ ! StartExpedition(List(RoverConfiguration(RoverPosition(1, 2, N), List(L)), RoverConfiguration(RoverPosition(3, 3, E), List(M))))
 
       poisonAllControllers
 
       display.expectMsg(ShowPositions)
     }
 
+    "print the successful result of the expedition" in new scope {
+      nasaHQ ! StartExpedition(List(RoverConfiguration(RoverPosition(1, 2, N), List(L)), RoverConfiguration(RoverPosition(3, 3, E), List(M))))
+
+      EventFilter.info(pattern = ".*successfully.*", occurrences = 1) intercept {
+        poisonAllControllers
+      }
+    }
+
+    "print failure result of the expedition" in new scope {
+      nasaHQ ! StartExpedition(List(RoverConfiguration(RoverPosition(1, 2, N), List(L)), RoverConfiguration(RoverPosition(3, 3, E), List(M))))
+
+      nasaHQ ! Disaster(TestProbe().ref)
+
+      EventFilter.info(pattern = ".*disaster.*", occurrences = 1) intercept {
+        poisonAllControllers
+      }
+    }
+
     "not accept new StartExpedition if we have a running one" in new scope {
 
-      NasaHQ ! StartExpedition(List(RoverConfiguration(RoverPosition(1, 2, N), List(L)), RoverConfiguration(RoverPosition(3, 3, E), List(M))))
-      NasaHQ ! StartExpedition(List(RoverConfiguration(RoverPosition(1, 2, N), List(L)), RoverConfiguration(RoverPosition(3, 3, E), List(M))))
-      NasaHQ ! StartExpedition(List(RoverConfiguration(RoverPosition(1, 2, N), List(L)), RoverConfiguration(RoverPosition(3, 3, E), List(M))))
+      nasaHQ ! StartExpedition(List(RoverConfiguration(RoverPosition(1, 2, N), List(L)), RoverConfiguration(RoverPosition(3, 3, E), List(M))))
+      nasaHQ ! StartExpedition(List(RoverConfiguration(RoverPosition(1, 2, N), List(L)), RoverConfiguration(RoverPosition(3, 3, E), List(M))))
+      nasaHQ ! StartExpedition(List(RoverConfiguration(RoverPosition(1, 2, N), List(L)), RoverConfiguration(RoverPosition(3, 3, E), List(M))))
 
-      controllers.size mustEqual 2
+      assert(controllers.size == 2)
     }
 
     "not register disaster without expedition" in new scope {
 
-      NasaHQ ! Disaster(TestProbe().ref)
+      nasaHQ ! Disaster(TestProbe().ref)
 
-      NasaHQ.underlyingActor.disaster mustEqual false
+      assert(nasaHQ.underlyingActor.disaster == false)
     }
 
     "be able to register disaster during expedition" in new scope {
 
-      NasaHQ ! StartExpedition(List(RoverConfiguration(RoverPosition(1, 2, N), List(L)), RoverConfiguration(RoverPosition(3, 3, E), List(M))))
-      NasaHQ ! Disaster(TestProbe().ref)
+      nasaHQ ! StartExpedition(List(RoverConfiguration(RoverPosition(1, 2, N), List(L)), RoverConfiguration(RoverPosition(3, 3, E), List(M))))
+      nasaHQ ! Disaster(TestProbe().ref)
 
-      NasaHQ.underlyingActor.disaster mustEqual true
+      assert(nasaHQ.underlyingActor.disaster == true)
     }
   }
 
@@ -71,10 +92,9 @@ class NasaHQTest extends Specification with AllExpectations {
         controllers = controller :: controllers
         controller.ref
     }
-    val NasaHQ = TestActorRef(new NasaHQ)
+    val nasaHQ = TestActorRef(new NasaHQ)
 
     def poisonAllControllers = controllers.foreach(_.ref ! PoisonPill)
   }
 
-  step(system.shutdown)
 }
