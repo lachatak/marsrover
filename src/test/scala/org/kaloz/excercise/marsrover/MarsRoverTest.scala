@@ -65,9 +65,17 @@ with BeforeAndAfterAll {
 
   private trait scope extends Scope {
     val marsRoverController = TestProbe()
-    val marsRover = TestActorRef(new MarsRover(RoverPosition(1, 2, E)))
+    val marsRover = TestActorRef(new TestMarsRover(RoverPosition(1, 2, E)))
   }
 
+}
+
+class TestMarsRover(roverPosition: RoverPosition) extends MarsRover(roverPosition) {
+
+  import scala.concurrent.duration._
+
+  override val movementSpeed = 0 millis
+  override val turningSpeed = 0 millis
 }
 
 class TestPlateau extends Actor {

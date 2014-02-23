@@ -3,12 +3,15 @@ package org.kaloz.excercise.marsrover
 import akka.actor._
 import scala.concurrent.duration._
 
-class MarsRover(roverPosition: RoverPosition) extends Actor with Configuration with ActorLogging {
+class MarsRover(roverPosition: RoverPosition) extends Actor with ActorLogging {
 
   import Plateau._
   import MarsRover._
   import MarsRoverController._
   import context.dispatcher
+
+  def movementSpeed = 2 seconds
+  def turningSpeed = 4 seconds
 
   val plateau = context.actorSelection("/user/plateau")
 
@@ -66,11 +69,5 @@ object MarsRover {
 
   case class Position(position: RoverPosition)
 
-}
-
-trait Configuration {
-  def movementSpeed = 100 millis
-
-  def turningSpeed = 100 millis
 }
 
