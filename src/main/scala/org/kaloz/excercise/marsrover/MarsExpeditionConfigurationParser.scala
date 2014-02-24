@@ -78,21 +78,16 @@ object Action extends Enumeration {
   val L, R, M = Value
 }
 
-case class PlateauConfiguration(val x: Integer, val y: Integer)
+case class PlateauConfiguration(x: Integer, y: Integer)
 
-case class RoverPosition(val x: Integer, val y: Integer, val facing: Facing.Value) {
+case class RoverPosition(x: Integer, y: Integer, facing: Facing.Value) {
   def doAction(action: Action.Value) = action match {
     case Action.L => new RoverPosition(x, y, facing.turnLeft)
     case Action.R => new RoverPosition(x, y, facing.turnRight)
     case Action.M => new RoverPosition(x + facing.moveX, y + facing.moveY, facing)
   }
-
-  override def equals(other: Any) = other match {
-    case that: RoverPosition => this.x == that.x && this.y == that.y && this.facing == that.facing
-    case _ => false
-  }
 }
 
-case class RoverConfiguration(val roverPosition: RoverPosition, val actions: List[Action.Value])
+case class RoverConfiguration(roverPosition: RoverPosition, actions: List[Action.Value])
 
-case class MarsExpeditionConfiguration(val definePlateau: PlateauConfiguration, val roverConfigurations: List[RoverConfiguration])
+case class MarsExpeditionConfiguration(definePlateau: PlateauConfiguration, roverConfigurations: List[RoverConfiguration])
