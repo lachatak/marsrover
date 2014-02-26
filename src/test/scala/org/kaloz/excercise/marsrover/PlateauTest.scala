@@ -1,6 +1,5 @@
 package org.kaloz.excercise.marsrover
 
-import org.specs2.specification.Scope
 import akka.actor.ActorSystem
 import org.kaloz.excercise.marsrover.Facing._
 import akka.testkit.{TestKit, TestProbe, TestActorRef}
@@ -45,7 +44,7 @@ with BeforeAndAfterAll {
     }
   }
 
-  private trait scope extends Scope {
+  private trait scope {
     val plateau = TestActorRef(new Plateau(PlateauConfiguration(5, 5)))
     val rover1 = TestProbe()
     val rover2 = TestProbe()

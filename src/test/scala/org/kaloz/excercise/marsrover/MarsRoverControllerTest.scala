@@ -1,6 +1,5 @@
 package org.kaloz.excercise.marsrover
 
-import org.specs2.specification.Scope
 import akka.actor._
 import akka.testkit.{TestKit, TestActorRef, TestProbe}
 import scala.Predef._
@@ -52,7 +51,7 @@ with BeforeAndAfterAll {
     }
   }
 
-  private trait scope extends Scope {
+  private trait scope {
     val marsRover = TestProbe()
     val display = TestProbe()
 

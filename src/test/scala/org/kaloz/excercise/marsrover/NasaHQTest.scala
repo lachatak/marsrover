@@ -1,6 +1,5 @@
 package org.kaloz.excercise.marsrover
 
-import org.specs2.specification.Scope
 import akka.actor._
 import akka.testkit.{EventFilter, TestKit, TestActorRef, TestProbe}
 import scala.Predef._
@@ -83,7 +82,7 @@ with OneInstancePerTest {
     }
   }
 
-  private trait scope extends Scope {
+  private trait scope {
     val display = TestProbe()
     var controllers = List.empty[TestProbe]
 

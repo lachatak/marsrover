@@ -1,6 +1,5 @@
 package org.kaloz.excercise.marsrover
 
-import org.specs2.specification.Scope
 import akka.actor._
 import akka.testkit.{EventFilter, TestKit, TestActorRef, TestProbe}
 import org.scalatest.{BeforeAndAfterAll, WordSpecLike}
@@ -39,7 +38,7 @@ with BeforeAndAfterAll {
     }
   }
 
-  private trait scope extends Scope {
+  private trait scope {
     val display = TestActorRef(new Display)
     val rover1 = TestProbe()
     val rover2 = TestProbe()

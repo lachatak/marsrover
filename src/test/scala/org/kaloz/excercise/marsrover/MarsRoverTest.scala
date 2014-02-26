@@ -6,7 +6,6 @@ import scala.Predef._
 import org.kaloz.excercise.marsrover.Facing._
 import org.kaloz.excercise.marsrover.MarsRoverController.{RoverDeployed, DeployRover, RoverAction}
 import org.scalatest.{BeforeAndAfterAll, WordSpecLike}
-import org.specs2.specification.Scope
 import org.kaloz.excercise.marsrover.MarsRover.Position
 import org.kaloz.excercise.marsrover.Plateau.{Ack, GotLost, Collusion}
 
@@ -63,7 +62,7 @@ with BeforeAndAfterAll {
     }
   }
 
-  private trait scope extends Scope {
+  private trait scope {
     val marsRoverController = TestProbe()
     val marsRover = TestActorRef(new TestMarsRover(RoverPosition(1, 2, E)))
   }
