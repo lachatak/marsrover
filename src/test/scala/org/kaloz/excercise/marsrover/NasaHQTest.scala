@@ -59,8 +59,10 @@ with OneInstancePerTest {
     "not accept new StartExpedition if we have a running one" in new scope {
 
       nasaHQ ! StartExpedition(List(RoverConfiguration(RoverPosition(1, 2, N), List(L)), RoverConfiguration(RoverPosition(3, 3, E), List(M))))
-      nasaHQ ! StartExpedition(List(RoverConfiguration(RoverPosition(1, 2, N), List(L)), RoverConfiguration(RoverPosition(3, 3, E), List(M))))
-      nasaHQ ! StartExpedition(List(RoverConfiguration(RoverPosition(1, 2, N), List(L)), RoverConfiguration(RoverPosition(3, 3, E), List(M))))
+
+      EventFilter.warning(start="unhandled", occurrences = 1) intercept {
+        nasaHQ ! StartExpedition(List(RoverConfiguration(RoverPosition(1, 2, N), List(L)), RoverConfiguration(RoverPosition(3, 3, E), List(M))))
+      }
 
       assert(controllers.size == 2)
     }
