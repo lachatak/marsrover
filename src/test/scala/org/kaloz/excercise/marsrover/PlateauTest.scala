@@ -11,6 +11,10 @@ class PlateauTest extends TestKit(ActorSystem("PlateauTest"))
 with WordSpecLike
 with BeforeAndAfterAll {
 
+  override def afterAll() {
+    system.shutdown()
+  }
+
   "Plateau" should {
     "track rover positions" in new scope {
 
