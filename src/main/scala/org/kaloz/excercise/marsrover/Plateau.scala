@@ -9,9 +9,13 @@ class Plateau(plateauConfigarutaion: PlateauConfiguration) extends Actor with Ac
 
   var roverPositions = Map.empty[ActorRef, RoverPosition]
 
+  override def preStart = {
+    context.system.eventStream.subscribe(context.self, classOf[Position])
+  }
+
   def receive = {
-    case Position(roverPosition) =>
-      roverPositions += (sender -> roverPosition)
+    case Position(roverPosition, publisher) =>
+      roverPositions += (publisher -> roverPosition)
       if (roverPositions.values.filter(_ == roverPosition).size > 1) {
         roverPositions.foreach {
           case (marsRover: ActorRef, position: RoverPosition) =>
@@ -20,10 +24,10 @@ class Plateau(plateauConfigarutaion: PlateauConfiguration) extends Actor with Ac
         }
       } else if (getLost(roverPosition)) {
         log.info(s"${sender.path.name} got lost at $roverPosition")
-        sender ! GotLost
+        publisher ! GotLost
       } else {
         log.info(s"${sender.path.name} position at $roverPosition is safe")
-        sender ! Ack
+        publisher ! Ack
       }
   }
 

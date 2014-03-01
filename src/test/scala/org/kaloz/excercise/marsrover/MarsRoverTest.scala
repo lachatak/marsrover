@@ -22,7 +22,7 @@ with BeforeAndAfterAll {
   "MarsRover" should {
     "be deployed" in new scope {
       marsRoverController.send(marsRover, DeployRover)
-      testPlateau.underlyingActor.testPlateauProbe.expectMsg(Position(RoverPosition(1, 2, E)))
+      testPlateau.underlyingActor.testPlateauProbe.expectMsg(Position(RoverPosition(1, 2, E), marsRover))
       assert(marsRover.underlyingActor.marsRoverController == marsRoverController.ref)
     }
 
@@ -31,7 +31,7 @@ with BeforeAndAfterAll {
       import Action._
 
       marsRoverController.send(marsRover, RoverAction(M))
-      testPlateau.underlyingActor.testPlateauProbe.expectMsg(Position(RoverPosition(2, 2, E)))
+      testPlateau.underlyingActor.testPlateauProbe.expectMsg(Position(RoverPosition(2, 2, E), marsRover))
     }
 
     "stop if collusion happens" in new scope {
@@ -80,6 +80,10 @@ class TestMarsRover(roverPosition: RoverPosition) extends MarsRover(roverPositio
 class TestPlateau extends Actor {
 
   var testPlateauProbe = TestProbe()(context.system)
+
+  override def preStart = {
+    context.system.eventStream.subscribe(context.self, classOf[Position])
+  }
 
   def receive = {
     case x => testPlateauProbe.ref forward x

@@ -14,8 +14,8 @@ with BeforeAndAfterAll {
   "Plateau" should {
     "track rover positions" in new scope {
 
-      rover1.send(plateau, Position(RoverPosition(1, 2, E)))
-      rover2.send(plateau, Position(RoverPosition(2, 3, E)))
+      rover1.send(plateau, Position(RoverPosition(1, 2, E), rover1.ref))
+      rover2.send(plateau, Position(RoverPosition(2, 3, E), rover2.ref))
 
       rover1.expectMsg(Ack)
       rover2.expectMsg(Ack)
@@ -28,8 +28,8 @@ with BeforeAndAfterAll {
 
     "report collusion if rovers standing on the same area" in new scope {
 
-      rover1.send(plateau, Position(RoverPosition(1, 2, E)))
-      rover2.send(plateau, Position(RoverPosition(1, 2, E)))
+      rover1.send(plateau, Position(RoverPosition(1, 2, E), rover1.ref))
+      rover2.send(plateau, Position(RoverPosition(1, 2, E), rover2.ref))
 
       rover1.expectMsg(Ack)
       rover1.expectMsg(Collusion)
@@ -38,7 +38,7 @@ with BeforeAndAfterAll {
 
     "report lost if the rover gets outside of the plateau" in new scope {
 
-      rover1.send(plateau, Position(RoverPosition(6, 5, E)))
+      rover1.send(plateau, Position(RoverPosition(6, 5, E), rover1.ref))
 
       rover1.expectMsg(GotLost)
     }
