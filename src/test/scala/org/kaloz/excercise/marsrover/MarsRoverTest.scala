@@ -13,7 +13,7 @@ class MarsRoverTest extends TestKit(ActorSystem("MarsRoverTest"))
 with WordSpecLike
 with BeforeAndAfterAll {
 
-  val testPlateau = TestActorRef(new TestPlateau, "plateau")
+  val testPlateau = TestActorRef(new TestPlateau)
 
   override def afterAll() {
     system.shutdown()

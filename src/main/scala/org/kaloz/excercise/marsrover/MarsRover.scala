@@ -22,7 +22,7 @@ class MarsRover(roverPosition: RoverPosition) extends Actor with ActorLogging {
   def receive = {
     case DeployRover =>
       log.info(s"Mars rover is approaching to $actualRoverPosition")
-      context.system.eventStream.publish(Position(actualRoverPosition, self))
+      publishPosition
       marsRoverController = sender
     case RoverAction(action) =>
       log.info(s"Mars rover is moving to ${actualRoverPosition.doAction(action)} with action $action")
@@ -35,7 +35,7 @@ class MarsRover(roverPosition: RoverPosition) extends Actor with ActorLogging {
     case EndOfMovement =>
       actualRoverPosition = actualRoverPosition.doAction(lastAction)
       log.info(s"Mars rover has arrived to $actualRoverPosition with action $lastAction")
-      context.system.eventStream.publish(Position(actualRoverPosition, self))
+      publishPosition
     case Collusion =>
       log.info(s"Mars rover has broken down")
       self ! PoisonPill
@@ -51,7 +51,10 @@ class MarsRover(roverPosition: RoverPosition) extends Actor with ActorLogging {
         log.info(s"Mars rover is waiting for the next action")
         marsRoverController ! Position(actualRoverPosition)
       }
+
   }
+
+  private def publishPosition = context.system.eventStream.publish(Position(actualRoverPosition, self))
 
   case object EndOfMovement
 
