@@ -36,7 +36,7 @@ class MarsExpeditionConfigurationParser extends JavaTokenParsers {
   }
 }
 
-object Facing extends Enumeration {
+object Facing extends Enumeration with Serializable{
   type Facing = Value
   val N, S, W, E = Value
 
@@ -80,7 +80,7 @@ object Action extends Enumeration {
 
 case class PlateauConfiguration(x: Integer, y: Integer)
 
-case class RoverPosition(x: Integer, y: Integer, facing: Facing.Value) {
+case class RoverPosition(x: Integer, y: Integer, facing: Facing.Value){
   def doAction(action: Action.Value) = action match {
     case Action.L => new RoverPosition(x, y, facing.turnLeft)
     case Action.R => new RoverPosition(x, y, facing.turnRight)

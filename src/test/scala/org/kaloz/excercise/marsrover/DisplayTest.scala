@@ -22,8 +22,8 @@ with BeforeAndAfterAll {
 
       assert(display.underlyingActor.roverPositions.size == 2)
 
-      assert(display.underlyingActor.roverPositions(rover1.ref) == RoverPosition(1, 2, E))
-      assert(display.underlyingActor.roverPositions(rover2.ref) == RoverPosition(2, 3, E))
+//      assert(display.underlyingActor.roverPositions(rover1.ref.path.name) == RoverPosition(1, 2, E))
+//      assert(display.underlyingActor.roverPositions(rover2.ref.path.name) == RoverPosition(2, 3, E))
     }
 
     "print the result" in new scope {

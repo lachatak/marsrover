@@ -1,6 +1,7 @@
 package org.kaloz.excercise.marsrover
 
 import akka.actor._
+import com.typesafe.config.ConfigFactory
 
 object MarsExpedition extends MarsExpeditionConfigurationParser {
 
