@@ -30,9 +30,10 @@ class NasaHQ(implicit actorFactory: (ActorRefFactory, Props, String) => ActorRef
       controllers = controllers.filter(c => c != marsRoverController)
       if (controllers.isEmpty) {
         display ! ShowPositions
-        context.parent ! PoisonPill
         log.info(s"Nasa expedition has been finished ${if (disaster) "with disaster" else "successfully"}!")
       }
+    case PositionsDisplayed =>
+      context.parent ! PoisonPill
   }
 
   private def deployMarsRovers(roverConfigurations: List[RoverConfiguration]) {
