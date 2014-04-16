@@ -23,10 +23,10 @@ class Plateau(plateauConfigarutaion: PlateauConfiguration) extends Actor with Ac
             marsRover ! Collusion
         }
       } else if (getLost(roverPosition)) {
-        log.info(s"${sender.path.name} got lost at $roverPosition")
+        log.info(s"${publisher.path.name} got lost at $roverPosition")
         publisher ! GotLost
       } else {
-        log.info(s"${sender.path.name} position at $roverPosition is safe")
+        log.info(s"${publisher.path.name} position at $roverPosition is safe")
         publisher ! Ack
       }
   }
