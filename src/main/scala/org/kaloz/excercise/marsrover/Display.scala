@@ -20,8 +20,9 @@ class Display extends EventsourcedProcessor with ActorLogging {
 
   case object Exception
 
-  context.system.scheduler.schedule(2 second, 2 second, self, TakeSnapshot)(context.dispatcher)
-  context.system.scheduler.schedule(5 second, 5 second, self, Exception)(context.dispatcher)
+  implicit val executor = context.dispatcher
+  context.system.scheduler.schedule(2 second, 2 second, self, TakeSnapshot)
+  context.system.scheduler.schedule(5 second, 5 second, self, Exception)
 
   var roverPositions = DisplayState()
 
