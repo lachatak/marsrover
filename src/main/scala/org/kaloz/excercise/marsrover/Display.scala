@@ -10,25 +10,38 @@ case class DisplayState(state: Map[String, List[RoverPosition]] = Map.empty) {
 
 case class PositionChangedEvent(marsRover: String, roverPosition: RoverPosition)
 
+case object Exception
+
 class Display extends EventsourcedProcessor with ActorLogging {
 
   import Display._
 
-  def chancheToFailure = 0.4
-
   case object TakeSnapshot
 
-  case object Exception
+  case object FailureCheck
 
-  implicit val executor = context.dispatcher
-  context.system.scheduler.schedule(2 second, 2 second, self, TakeSnapshot)
-  context.system.scheduler.schedule(5 second, 5 second, self, Exception)
+  def scheduleFailure = true
+
+  def chancheToFailure = 0.4
+
+  def initialDelayForSnapshot = 2 second
+
+  def scheduledSnapshots = 2 second
+
+  def initialDelayForFailureCheck = 5 second
+
+  def scheduledFailureCheck = 5 second
 
   var roverPositions = DisplayState()
 
   override def preStart() {
     deleteSnapshots(SnapshotSelectionCriteria())
     deleteMessages(100000l)
+
+    implicit val executor = context.dispatcher
+    context.system.scheduler.schedule(initialDelayForSnapshot, scheduledSnapshots, self, TakeSnapshot)
+    if (scheduleFailure) context.system.scheduler.schedule(initialDelayForFailureCheck, scheduledFailureCheck, self, FailureCheck)
+
     super.preStart()
   }
 
@@ -41,6 +54,7 @@ class Display extends EventsourcedProcessor with ActorLogging {
   val receiveRecover: Receive = {
     case evt: PositionChangedEvent => log.warning(s"Recover event - $evt"); updateState(evt)
     case SnapshotOffer(_, snapshot: DisplayState) => log.warning(s"Recover snapshot - $snapshot"); roverPositions = snapshot
+    case _ =>
   }
 
   val receiveCommand: Receive = {
@@ -55,10 +69,12 @@ class Display extends EventsourcedProcessor with ActorLogging {
     case TakeSnapshot =>
       log.info("Taking snapshot...")
       saveSnapshot(roverPositions)
-    case Exception =>
+    case FailureCheck =>
       val r = math.random
       log.warning(s"Chance to blow was $r")
-      if (r < chancheToFailure) throw new Exception("Some really serious problem!");
+      if (r < chancheToFailure) self ! Exception
+    case Exception =>
+      throw new Exception("Some really serious problem!");
   }
 
   override def postRestart(err: Throwable) = {
