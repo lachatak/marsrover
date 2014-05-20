@@ -1,6 +1,7 @@
 package org.kaloz.excercise.marsrover
 
 import scala.util.parsing.combinator._
+import scala.util.Random
 
 class MarsExpeditionConfigurationParser extends JavaTokenParsers {
   override val whiteSpace = """[ \t]+""".r
@@ -27,7 +28,11 @@ class MarsExpeditionConfigurationParser extends JavaTokenParsers {
     case a => Action.withName(a)
   }
 
-  def roverConfiguration = roverStartPosition ~ eol ~ rep(action) <~ opt(eol) ^^ {
+  def random = "X" ^^ {
+    case a => Action.apply(new Random().nextInt(Action.values.size))
+  }
+
+  def roverConfiguration = roverStartPosition ~ eol ~ rep(action | random) <~ opt(eol) ^^ {
     case roverStartPosition ~ e ~ actions => RoverConfiguration(roverStartPosition, actions)
   }
 
@@ -36,7 +41,7 @@ class MarsExpeditionConfigurationParser extends JavaTokenParsers {
   }
 }
 
-object Facing extends Enumeration with Serializable{
+object Facing extends Enumeration with Serializable {
   type Facing = Value
   val N, S, W, E = Value
 
@@ -80,11 +85,11 @@ object Action extends Enumeration {
 
 case class PlateauConfiguration(x: Integer, y: Integer)
 
-case class RoverPosition(x: Integer, y: Integer, facing: Facing.Value){
+case class RoverPosition(x: Integer, y: Integer, facing: Facing.Value) {
   def doAction(action: Action.Value) = action match {
-    case Action.L => new RoverPosition(x, y, facing.turnLeft)
-    case Action.R => new RoverPosition(x, y, facing.turnRight)
-    case Action.M => new RoverPosition(x + facing.moveX, y + facing.moveY, facing)
+    case Action.L => copy(x, y, facing.turnLeft)
+    case Action.R => copy(x, y, facing.turnRight)
+    case Action.M => copy(x + facing.moveX, y + facing.moveY, facing)
   }
 }
 
