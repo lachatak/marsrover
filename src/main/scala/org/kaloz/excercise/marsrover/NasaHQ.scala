@@ -1,25 +1,54 @@
 package org.kaloz.excercise.marsrover
 
 import akka.actor._
+import akka.contrib.pattern.DistributedPubSubExtension
+import akka.contrib.pattern.DistributedPubSubMediator.{SubscribeAck, Subscribe}
 
-class NasaHQ(implicit actorFactory: (ActorRefFactory, Props, String) => ActorRef) extends Actor with ActorLogging {
+class NasaHQ(roverConfigurations: List[RoverConfiguration])(implicit actorFactory: (ActorRefFactory, Props, String) => ActorRef) extends Actor with ActorLogging {
 
   import NasaHQ._
   import MarsRoverController._
   import Display._
 
   val display = actorFactory(context, Display.props, "Display")
+  val mediator = DistributedPubSubExtension(context.system).mediator
 
   var controllers = List.empty[ActorRef]
   var disaster = false
 
-  context.become(idle)
+  context.become(startUp())
+  mediator ! Subscribe("registration", self)
 
-  def idle: Receive = {
-    case StartExpedition(roverConfigurations) =>
-      log.info(s"Nasa expedition has started with rover configuration $roverConfigurations")
-      deployMarsRovers(roverConfigurations)
-      context.become(receive)
+  def startUp(marsRovers: List[ActorRef] = List.empty): Receive = {
+    case SubscribeAck(Subscribe("registration", self)) =>
+      log.info("Subscribed to registration topic!")
+      log.info("Waiting rovers to register!")
+    case RegisterRover(marsRover) =>
+      handleRoverRegistration(marsRover :: marsRovers)
+  }
+
+  def handleRoverRegistration(marsRovers: List[ActorRef]) {
+    marsRovers.head ! RoverRegistered
+
+    if (marsRovers.size == roverConfigurations.size) {
+      log.info("Expedition is ready to be kicked!")
+      startRovers(marsRovers.zip(roverConfigurations))
+    } else {
+      log.info(s"Expedition still needs ${roverConfigurations.size - marsRovers.size} mars rovers!")
+      context.become(startUp(marsRovers))
+    }
+  }
+
+  def startRovers(components: List[Pair[ActorRef, RoverConfiguration]]) {
+    context.become(receive)
+
+    components.zipWithIndex.foreach {
+      case Pair(Pair(rover, configuration), index) =>
+        val marsRoverController = actorFactory(context, MarsRoverController.props(configuration, rover, display), s"marsRoverController-$index")
+        context.watch(marsRoverController)
+        controllers = marsRoverController :: controllers
+        marsRoverController ! StartRover
+    }
   }
 
   def receive = {
@@ -35,22 +64,16 @@ class NasaHQ(implicit actorFactory: (ActorRefFactory, Props, String) => ActorRef
     case PositionsDisplayed =>
       context.parent ! PoisonPill
   }
-
-  private def deployMarsRovers(roverConfigurations: List[RoverConfiguration]) {
-    var count = 0
-    roverConfigurations.foreach(rc => {
-      count = count + 1
-      val marsRoverController = actorFactory(context, MarsRoverController.props(rc, display), s"marsRoverController-$count")
-      context.watch(marsRoverController)
-      controllers = marsRoverController :: controllers
-    })
-  }
 }
 
 object NasaHQ {
 
-  def props(actorFactory: (ActorRefFactory, Props, String) => ActorRef): Props = Props(classOf[NasaHQ], actorFactory)
+  def props(roverConfigurations: List[RoverConfiguration], actorFactory: (ActorRefFactory, Props, String) => ActorRef): Props = Props(classOf[NasaHQ], roverConfigurations, actorFactory)
 
   case class StartExpedition(roverConfigurations: List[RoverConfiguration])
+
+  case class RegisterRover(marsRover: ActorRef)
+
+  case object RoverRegistered
 
 }

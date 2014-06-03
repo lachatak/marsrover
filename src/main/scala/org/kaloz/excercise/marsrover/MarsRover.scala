@@ -2,9 +2,40 @@ package org.kaloz.excercise.marsrover
 
 import akka.actor._
 import scala.concurrent.duration._
+import com.typesafe.config.ConfigFactory
+import scala.tools.jline.console.ConsoleReader
+import akka.contrib.pattern.DistributedPubSubExtension
+import akka.cluster.Cluster
+import org.kaloz.excercise.marsrover.NasaHQ.{RoverRegistered, RegisterRover}
 
-class MarsRover(roverPosition: RoverPosition) extends Actor with ActorLogging {
+object MarsRover extends App {
 
+  def props: Props = Props[MarsRover]
+
+  case class Position(position: RoverPosition, marsRover: ActorRef*)
+
+  case class DeployRover(roverPosition: RoverPosition)
+
+  val identity = new ConsoleReader().readLine("rover id: ")
+  val system = ActorSystem("MarsExpedition", ConfigFactory.load.getConfig("marsrover"))
+
+  /**
+   * Join to the cluster
+   */
+  val serverconfig = ConfigFactory.load.getConfig("headquarter")
+  val serverHost = serverconfig.getString("akka.remote.netty.tcp.hostname")
+  val serverPort = serverconfig.getString("akka.remote.netty.tcp.port")
+  val address = Address("akka.tcp", "MarsExpedition", serverHost, serverPort.toInt)
+  Cluster(system).join(address)
+
+  system.actorOf(ServerListener.props(address), name = "serverListener")
+  system.actorOf(MarsRover.props, name = identity)
+
+}
+
+class MarsRover extends Actor with ActorLogging {
+
+  import akka.contrib.pattern.DistributedPubSubMediator.Publish
   import Plateau._
   import MarsRover._
   import MarsRoverController._
@@ -12,16 +43,37 @@ class MarsRover(roverPosition: RoverPosition) extends Actor with ActorLogging {
 
   def movementSpeed = 2 seconds
 
-  def turningSpeed = 4 seconds
+  def turningSpeed = 3 seconds
 
-  var roverState = RoverState.UNDER_DEPLOYMENT
-  var actualRoverPosition = roverPosition
+  val mediator = DistributedPubSubExtension(context.system).mediator
+
+  var roverState = RoverState.CREATED
+  var actualRoverPosition: RoverPosition = _
   var lastAction: Action.Value = _
   var marsRoverController: ActorRef = _
 
+  context.become(registration)
+  scheduler.scheduleOnce(1.seconds, self, Tick)
+
+  def scheduler = context.system.scheduler
+
+  def registration: Receive = {
+    case Tick =>
+      if (roverState != RoverState.REGISTERED) {
+        log.info("Publishing registration!")
+        mediator ! Publish("registration", RegisterRover(self))
+        scheduler.scheduleOnce(1.seconds, self, Tick)
+      }
+    case RoverRegistered =>
+      log.info("Successful registration!")
+      context become receive
+      roverState = RoverState.REGISTERED
+  }
+
   def receive = {
-    case DeployRover =>
-      log.info(s"Mars rover is approaching to $actualRoverPosition")
+    case DeployRover(roverPosition: RoverPosition) =>
+      actualRoverPosition = roverPosition
+      log.info(s"Mars rover is approaching to $roverPosition")
       publishPosition
       marsRoverController = sender
     case RoverAction(action) =>
@@ -43,8 +95,8 @@ class MarsRover(roverPosition: RoverPosition) extends Actor with ActorLogging {
       log.info(s"Mars rover got lost!")
       self ! PoisonPill
     case Ack =>
-      if (roverState.equals(RoverState.UNDER_DEPLOYMENT)) {
-        roverState = RoverState.READY
+      if (roverState.equals(RoverState.REGISTERED)) {
+        roverState = RoverState.DEPLOYED
         marsRoverController ! RoverDeployed
       } else {
         roverState = RoverState.READY
@@ -54,22 +106,16 @@ class MarsRover(roverPosition: RoverPosition) extends Actor with ActorLogging {
 
   }
 
-  private def publishPosition = context.system.eventStream.publish(Position(actualRoverPosition, self))
+  private def publishPosition = mediator ! Publish("position", Position(actualRoverPosition, self))
 
   case object EndOfMovement
+
+  case object Tick
 
 }
 
 object RoverState extends Enumeration {
   type RoverState = Value
-  val UNDER_DEPLOYMENT, READY, MOVING = Value
-}
-
-object MarsRover {
-
-  def props(roverPosition: RoverPosition): Props = Props(classOf[MarsRover], roverPosition)
-
-  case class Position(position: RoverPosition, marsRover: ActorRef*)
-
+  val CREATED, REGISTERED, DEPLOYED, READY, MOVING = Value
 }
 

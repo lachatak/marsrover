@@ -51,6 +51,7 @@ with ImplicitSender {
   }
 
   private class DisplayTest extends Display {
+    override val scheduleSnapshot = false
     override val scheduleFailure = false
     override val initialDelayForSnapshot = 0 second
     override val scheduledSnapshots = 10 second

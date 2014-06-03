@@ -2,23 +2,23 @@ package org.kaloz.excercise.marsrover
 
 import akka.actor._
 
-class MarsRoverController(roverConfigurations: RoverConfiguration, display: ActorRef)(implicit actorFactory: (ActorRefFactory, Props, String) => ActorRef) extends Actor with ActorLogging {
+class MarsRoverController(roverConfigurations: RoverConfiguration, marsRover: ActorRef, display: ActorRef) extends Actor with ActorLogging {
 
   import MarsRover._
   import MarsRoverController._
   import Display._
 
-  val marsRover = actorFactory(context, MarsRover.props(roverConfigurations.roverPosition), s"marsRover-${extractCounter}")
-
   var roverActions = roverConfigurations.actions
 
   context.watch(marsRover)
-  log.info(s"Deploying ${marsRover.path.name} to ${roverConfigurations.roverPosition}")
-  marsRover ! DeployRover
 
   def receive = {
+    case StartRover =>
+      log.info("Start command has arrived. Let's GO!")
+      log.info(s"Deploying ${marsRover.path.name} to ${roverConfigurations.roverPosition}")
+      marsRover ! DeployRover(roverConfigurations.roverPosition)
     case RoverDeployed =>
-      log.info(s"${marsRover.path.name} has been deployed, sending start action")
+      log.info(s"${marsRover.path.name} has been deployed, waiting for start command!")
       sendNextAction
     case Position(roverPosition) =>
       log.info(s"$roverPosition is acknowledged from ${marsRover.path.name}")
@@ -36,19 +36,18 @@ class MarsRoverController(roverConfigurations: RoverConfiguration, display: Acto
       marsRover ! RoverAction(roverActions.head)
       roverActions = roverActions.tail
     } else {
-      log.info(s"No more actions. Controller is stopping")
+      log.info("No more actions. Controller is stopping...")
+      marsRover ! PoisonPill
       self ! PoisonPill
     }
   }
-
-  private def extractCounter = self.path.name.substring(self.path.name.lastIndexOf("-") + 1)
 }
 
 object MarsRoverController {
 
-  def props(roverConfigurations: RoverConfiguration, display: ActorRef)(implicit actorFactory: (ActorRefFactory, Props, String) => ActorRef): Props = Props(classOf[MarsRoverController], roverConfigurations, display, actorFactory)
+  def props(roverConfigurations: RoverConfiguration, marsRover: ActorRef, display: ActorRef): Props = Props(classOf[MarsRoverController], roverConfigurations, marsRover, display)
 
-  case object DeployRover
+  case object StartRover
 
   case object RoverDeployed
 

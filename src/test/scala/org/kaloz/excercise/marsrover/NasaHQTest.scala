@@ -3,15 +3,16 @@ package org.kaloz.excercise.marsrover
 import akka.actor._
 import akka.testkit.{EventFilter, TestKit, TestActorRef, TestProbe}
 import scala.Predef._
-import org.kaloz.excercise.marsrover.Facing._
-import org.kaloz.excercise.marsrover.Action._
-import org.kaloz.excercise.marsrover.NasaHQ.StartExpedition
+import org.scalatest.{Matchers, OneInstancePerTest, BeforeAndAfterAll, WordSpecLike}
+import org.kaloz.excercise.marsrover.NasaHQ.{RoverRegistered, RegisterRover}
+import org.kaloz.excercise.marsrover.MarsRoverController.{Disaster, StartRover}
 import org.kaloz.excercise.marsrover.Display.ShowPositions
-import org.kaloz.excercise.marsrover.MarsRoverController.Disaster
-import org.scalatest.{OneInstancePerTest, BeforeAndAfterAll, WordSpecLike}
+import org.kaloz.excercise.marsrover.Action._
+import org.kaloz.excercise.marsrover.Facing._
 
 class NasaHQTest extends TestKit(ActorSystem("NasaHQTest"))
 with WordSpecLike
+with Matchers
 with BeforeAndAfterAll
 with OneInstancePerTest {
 
@@ -20,25 +21,58 @@ with OneInstancePerTest {
   }
 
   "NasaHQ" should {
-    "start be able to start an expedition" in new scope {
+    "subscribe registration topic" in {
 
-      nasaHQ ! StartExpedition(List(RoverConfiguration(RoverPosition(1, 2, N), List(L)), RoverConfiguration(RoverPosition(3, 3, E), List(M))))
+      implicit val actorFactory = (actorFactory: ActorRefFactory, props: Props, name: String) => TestProbe().ref
 
-      assert(nasaHQ.underlyingActor.display == display.ref)
-      assert(controllers.size == 2)
+      EventFilter.info(start = "Subscribed to registration topic!", occurrences = 1) intercept {
+        TestActorRef(new NasaHQ(Nil))
+      }
     }
 
-    "initiate showing positions at the end of simulation" in new scope {
+    "be able to create a diplay actor" in new scope {
 
-      nasaHQ ! StartExpedition(List(RoverConfiguration(RoverPosition(1, 2, N), List(L)), RoverConfiguration(RoverPosition(3, 3, E), List(M))))
+      nasaHQ.underlyingActor.display should equal(display.ref)
+    }
+
+    "accept rover registrations after it has been started" in new scope {
+
+      EventFilter.info(start = "Expedition still needs 1", occurrences = 1) intercept {
+        nasaHQ ! RegisterRover(rover1.ref)
+      }
+
+      rover1.expectMsg(RoverRegistered)
+    }
+
+    "be able to start registered rovers" in new scope {
+
+      EventFilter.info(start = "Expedition still needs 1", occurrences = 1) intercept {
+        nasaHQ ! RegisterRover(rover1.ref)
+      }
+
+      EventFilter.info(start = "Expedition is ready to be kicked!", occurrences = 1) intercept {
+        nasaHQ ! RegisterRover(rover2.ref)
+      }
+
+      rover1.expectMsg(RoverRegistered)
+      rover2.expectMsg(RoverRegistered)
+
+      controllers.size should equal(2)
+
+      controllers.foreach(_.expectMsg(StartRover))
+
+    }
+
+    "initiate showing positions at the end of simulation" in new scope with registration {
+      this: scope =>
 
       poisonAllControllers
 
       display.expectMsg(ShowPositions)
     }
 
-    "print the successful result of the expedition" in new scope {
-      nasaHQ ! StartExpedition(List(RoverConfiguration(RoverPosition(1, 2, N), List(L)), RoverConfiguration(RoverPosition(3, 3, E), List(M))))
+    "print the successful result of the expedition" in new scope with registration {
+      this: scope =>
 
       EventFilter.info(pattern = ".*successfully.*", occurrences = 1) intercept {
         poisonAllControllers
@@ -46,7 +80,9 @@ with OneInstancePerTest {
     }
 
     "print failure result of the expedition" in new scope {
-      nasaHQ ! StartExpedition(List(RoverConfiguration(RoverPosition(1, 2, N), List(L)), RoverConfiguration(RoverPosition(3, 3, E), List(M))))
+
+      nasaHQ ! RegisterRover(rover1.ref)
+      nasaHQ ! RegisterRover(rover2.ref)
 
       nasaHQ ! Disaster(TestProbe().ref)
 
@@ -55,35 +91,27 @@ with OneInstancePerTest {
       }
     }
 
-    "not accept new StartExpedition if we have a running one" in new scope {
-
-      nasaHQ ! StartExpedition(List(RoverConfiguration(RoverPosition(1, 2, N), List(L)), RoverConfiguration(RoverPosition(3, 3, E), List(M))))
-
-      EventFilter.warning(start="unhandled", occurrences = 1) intercept {
-        nasaHQ ! StartExpedition(List(RoverConfiguration(RoverPosition(1, 2, N), List(L)), RoverConfiguration(RoverPosition(3, 3, E), List(M))))
-      }
-
-      assert(controllers.size == 2)
-    }
-
-    "not register disaster without expedition" in new scope {
+    "not be able to register disaster without runnig expedition" in new scope {
 
       nasaHQ ! Disaster(TestProbe().ref)
 
-      assert(nasaHQ.underlyingActor.disaster == false)
+      nasaHQ.underlyingActor.disaster should equal(false)
     }
 
-    "be able to register disaster during expedition" in new scope {
+    "be able to register disaster during expedition" in new scope with registration {
+      this: scope =>
 
-      nasaHQ ! StartExpedition(List(RoverConfiguration(RoverPosition(1, 2, N), List(L)), RoverConfiguration(RoverPosition(3, 3, E), List(M))))
       nasaHQ ! Disaster(TestProbe().ref)
 
-      assert(nasaHQ.underlyingActor.disaster == true)
+      nasaHQ.underlyingActor.disaster should equal(true)
     }
   }
 
   private trait scope {
+
     val display = TestProbe()
+    val rover1 = TestProbe()
+    val rover2 = TestProbe()
     var controllers = List.empty[TestProbe]
 
     implicit val actorFactory = (actorFactory: ActorRefFactory, props: Props, name: String) => props.actorClass() match {
@@ -93,9 +121,16 @@ with OneInstancePerTest {
         controllers = controller :: controllers
         controller.ref
     }
-    val nasaHQ = TestActorRef(new NasaHQ)
+    val nasaHQ = TestActorRef(new NasaHQ(List(RoverConfiguration(RoverPosition(1, 2, N), List(L)), RoverConfiguration(RoverPosition(3, 3, E), List(M)))))
 
     def poisonAllControllers = controllers.foreach(_.ref ! PoisonPill)
+  }
+
+  private trait registration {
+    this: scope =>
+
+    nasaHQ ! RegisterRover(rover1.ref)
+    nasaHQ ! RegisterRover(rover2.ref)
   }
 
 }

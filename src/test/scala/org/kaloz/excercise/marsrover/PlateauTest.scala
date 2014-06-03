@@ -5,10 +5,11 @@ import org.kaloz.excercise.marsrover.Facing._
 import akka.testkit.{TestKit, TestProbe, TestActorRef}
 import org.kaloz.excercise.marsrover.MarsRover.Position
 import org.kaloz.excercise.marsrover.Plateau.{Collusion, GotLost, Ack}
-import org.scalatest.{BeforeAndAfterAll, WordSpecLike}
+import org.scalatest.{Matchers, BeforeAndAfterAll, WordSpecLike}
 
 class PlateauTest extends TestKit(ActorSystem("PlateauTest"))
 with WordSpecLike
+with Matchers
 with BeforeAndAfterAll {
 
   override def afterAll() {
@@ -24,10 +25,10 @@ with BeforeAndAfterAll {
       rover1.expectMsg(Ack)
       rover2.expectMsg(Ack)
 
-      assert(plateau.underlyingActor.roverPositions.size == 2)
+      plateau.underlyingActor.roverPositions.size should equal(2)
 
-      assert(plateau.underlyingActor.roverPositions(rover1.ref) == RoverPosition(1, 2, E))
-      assert(plateau.underlyingActor.roverPositions(rover2.ref) == RoverPosition(2, 3, E))
+      plateau.underlyingActor.roverPositions(rover1.ref) should equal(RoverPosition(1, 2, E))
+      plateau.underlyingActor.roverPositions(rover2.ref) should equal(RoverPosition(2, 3, E))
     }
 
     "report collusion if rovers standing on the same area" in new scope {

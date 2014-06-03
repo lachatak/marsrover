@@ -1,19 +1,23 @@
 package org.kaloz.excercise.marsrover
 
 import akka.actor._
+import akka.contrib.pattern.DistributedPubSubExtension
+import akka.contrib.pattern.DistributedPubSubMediator.SubscribeAck
 
 class Plateau(plateauConfigarutaion: PlateauConfiguration) extends Actor with ActorLogging {
 
+  import akka.contrib.pattern.DistributedPubSubMediator.Subscribe
   import Plateau._
   import MarsRover._
 
+  val mediator = DistributedPubSubExtension(context.system).mediator
+
   var roverPositions = Map.empty[ActorRef, RoverPosition]
 
-  override def preStart = {
-    context.system.eventStream.subscribe(context.self, classOf[Position])
-  }
+  mediator ! Subscribe("position", self)
 
   def receive = {
+    case SubscribeAck(Subscribe("position", self)) => log.info("Subscribed to position topic")
     case Position(roverPosition, publisher) =>
       roverPositions += (publisher -> roverPosition)
       if (roverPositions.values.filter(_ == roverPosition).size > 1) {

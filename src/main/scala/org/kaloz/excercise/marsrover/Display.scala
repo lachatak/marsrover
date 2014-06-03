@@ -20,26 +20,28 @@ class Display extends EventsourcedProcessor with ActorLogging {
 
   case object FailureCheck
 
+  var roverPositions = DisplayState()
+
   def scheduleFailure = true
+
+  def scheduleSnapshot = true
 
   def chancheToFailure = 0.4
 
-  def initialDelayForSnapshot = 2 second
+  def initialDelayForSnapshot = 5 second
 
-  def scheduledSnapshots = 2 second
+  def scheduledSnapshots = 5 second
 
   def initialDelayForFailureCheck = 5 second
 
   def scheduledFailureCheck = 5 second
-
-  var roverPositions = DisplayState()
 
   override def preStart() {
     deleteSnapshots(SnapshotSelectionCriteria())
     deleteMessages(100000l)
 
     implicit val executor = context.dispatcher
-    context.system.scheduler.schedule(initialDelayForSnapshot, scheduledSnapshots, self, TakeSnapshot)
+    if (scheduleSnapshot) context.system.scheduler.schedule(initialDelayForSnapshot, scheduledSnapshots, self, TakeSnapshot)
     if (scheduleFailure) context.system.scheduler.schedule(initialDelayForFailureCheck, scheduledFailureCheck, self, FailureCheck)
 
     super.preStart()
