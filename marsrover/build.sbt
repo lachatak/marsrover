@@ -3,7 +3,7 @@ name := "marsrover"
 Common.settings
 
 libraryDependencies ++= Seq(
-  "org.kaloz.excercise" % "marsrover-api" % "1.0.0",
+  "org.kaloz.excercise" %% "marsrover-api" % "1.0.0",
   "com.typesafe.akka" % "akka-actor_2.10" % "2.3.0",
   "com.typesafe.akka" %% "akka-persistence-experimental" % "2.3.0",
   "com.typesafe.akka" %% "akka-contrib" % "2.3.0",
