@@ -3,8 +3,12 @@ target/
 *.iml
 *.ipr
 .idea
+.idea_modules
 .project
 .metadata
 .cache
 .classpath
 .settings
+
+marsroverplay/logs/application.log
+

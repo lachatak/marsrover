@@ -1,0 +1,23 @@
+<html>
+<head>
+    <script type='text/javascript' src='@routes.WebJarAssets.at(WebJarAssets.locate("jquery.min.js"))'></script>
+    <script type='text/javascript' src='@routes.WebJarAssets.at(WebJarAssets.locate("raphael-min.js"))'></script>
+    <script type='text/javascript' src='@routes.Assets.at("javascripts/marsrover.js")'></script>
+</head>
+<body>
+<!-- the html element where to put the paper -->
+<div id="paper"></div>
+
+<!-- a script that create's a paper and a rectangle -->
+<script type="text/javascript">
+    var rover_img_src = '@routes.Assets.at("pics/rover.jpg")'
+    var explosion_img_src = '@routes.Assets.at("pics/explosion.png")'
+    var facingPics = {'N':'@routes.Assets.at("pics/arrow-N.gif")','E':'@routes.Assets.at("pics/arrow-E.gif")','S':'@routes.Assets.at("pics/arrow-S.gif")','W':'@routes.Assets.at("pics/arrow-W.gif")'}
+    var paper = Raphael("paper", 1200,600);
+	paper.image('@routes.Assets.at("pics/surface.gif")', 0, 0, 1200, 600).attr('stroke', '#000');
+
+</script>
+
+<p id="status"></p>
+</body>
+</html>
