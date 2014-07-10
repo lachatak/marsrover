@@ -4,13 +4,13 @@ import akka.actor.{ActorRef, ActorSystem, Address}
 import akka.cluster.Cluster
 import com.typesafe.config.ConfigFactory
 import controllers.actor.ClientRequestHandlerActor
-import play.api.{Application, GlobalSettings}
+import play.api.GlobalSettings
 
 object Global extends GlobalSettings {
 
   var clientRequestHandler: ActorRef = _
 
-  override def onStart(application: Application) {
+  override def onStart(application: play.api.Application) {
 
     val system = ActorSystem("MarsExpedition", ConfigFactory.load.getConfig("display"))
 
@@ -21,7 +21,7 @@ object Global extends GlobalSettings {
 
     Cluster(system).join(address)
 
-    clientRequestHandler = system.actorOf(ClientRequestHandlerActor.props, name="ClientRequestHandlerActor")
+    clientRequestHandler = system.actorOf(ClientRequestHandlerActor.props, name = "ClientRequestHandlerActor")
   }
 }
 
