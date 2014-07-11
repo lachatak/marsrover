@@ -20,7 +20,7 @@ class NasaHQ(configuration: MarsExpeditionConfiguration)(implicit actorFactory: 
   mediator ! Subscribe("registration", self)
 
   def startUp(marsRovers: List[ActorRef] = List.empty): Receive = {
-    case SubscribeAck(Subscribe("registration", self)) =>
+    case SubscribeAck(Subscribe("registration", None, self)) =>
       log.info("Subscribed to registration topic!")
       log.info("Waiting rovers to register!")
     case RegisterRover(marsRover) =>

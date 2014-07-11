@@ -18,7 +18,7 @@ class Plateau(plateauConfigarutaion: PlateauConfiguration) extends Actor with Ac
   mediator ! Subscribe("position", self)
 
   def receive = {
-    case SubscribeAck(Subscribe("position", self)) => log.info("Subscribed to position topic")
+    case SubscribeAck(Subscribe("position", None, self)) => log.info("Subscribed to position topic")
     case Position(roverPosition, publisher) =>
       roverPositions += (publisher -> roverPosition)
       if (roverPositions.values.filter(_ == roverPosition).size > 1) {

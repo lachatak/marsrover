@@ -71,7 +71,7 @@ class Display(plateauConfiguration: PlateauConfiguration) extends EventsourcedPr
   }
 
   val receiveCommand: Receive = {
-    case SubscribeAck(Subscribe("remoteDisplay", self)) =>
+    case SubscribeAck(Subscribe("remoteDisplay", None, self)) =>
       log.info("Subscribed to remoteDisplay topic!")
       log.info("Waiting Remote display to register!")
     case RegisterDisplay(display) =>
