@@ -3,7 +3,7 @@ import Keys._
 
 object BuildSettings {
 
-  import Tasks._
+  import Aliases._
 
   lazy val basicSettings = Seq(
     version := "1.0.0",
@@ -20,8 +20,8 @@ object BuildSettings {
       "-language:implicitConversions"
     )
   ) ++
-    startRoverTask ++
-    startHqTask ++
-    startUITask
+    startRoverAlias ++
+    startHqAlias ++
+    startUiAlias
 
 }
