@@ -73,7 +73,7 @@ It means that you have to start 3 rovers in a separate JVM. To make it easy I ad
 If you would like to try the app in a distributed fashion all you need is to modify the [marsrover](marsrover/src/main/resources/application.conf) and [marsroverplay](marsroverplay/conf/application.conf) headquarter section's **hostname** configuration to point where the servers is running. All the rest is the same.
 Components are going to find each other in the clustered environment.
 
-If everything was OK when you start your UI you should see the moving rovers like this:
+If everything was OK when you started your UI you should see the moving rovers like this:
 
 ![Alt text](screenshot.png?raw=true "Running rovers")
 
