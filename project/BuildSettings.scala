@@ -22,6 +22,7 @@ object BuildSettings {
   ) ++
     startRoverAlias ++
     startHqAlias ++
+    startHqAlias1 ++
     startUiAlias
 
 }

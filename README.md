@@ -62,7 +62,7 @@ sbt
 publishLocal
 ```
 
-After deploying you are ready to run the application. By default it is configured to expect 3 mars rovers to support the expedition. The [configuration](marsrover/src/main/resources/input.txt) can be found under the marsrover project's resources.
+After deploying you are ready to run the application. By default it is configured to expect 3 mars rovers to support the expedition. The [configuration](marsrover/src/main/resources/input-default.txt) can be found under the marsrover project's resources.
 It means that you have to start 3 rovers in a separate JVM. To make it easy I added 3 aliases.
 - **hq** starts the server. This should be used first.
 - **rover** start a rover. We need 3 separate console to run them. After you have started you have to provide a unique id. It is going to distinguish between the rovers on the UI.

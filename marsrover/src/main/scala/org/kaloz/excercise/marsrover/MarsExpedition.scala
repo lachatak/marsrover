@@ -8,7 +8,7 @@ object MarsExpedition extends MarsExpeditionConfigurationParser {
 
   def main(args: Array[String]) {
 
-    val input = scala.io.Source.fromInputStream(getClass.getClassLoader.getResourceAsStream(if (args.length == 1) args(0) else "input.txt")).mkString
+    val input = scala.io.Source.fromInputStream(getClass.getClassLoader.getResourceAsStream(if (args.length == 1) args(0) else "input-default.txt")).mkString
     parseAll(marsExpeditionConfiguration, input) match {
       case Success(mec, _) => new MarsExpedition(mec)
       case x => println(x)
