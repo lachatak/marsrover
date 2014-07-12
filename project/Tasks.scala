@@ -1,8 +1,8 @@
 import sbt._
 
-object Tasks {
+object Aliases {
 
-  lazy val startRoverTask = addCommandAlias("rover", ";project marsrover; runMain org.kaloz.excercise.marsrover.MarsRover")
-  lazy val startHqTask = addCommandAlias("hq", ";project marsrover; runMain org.kaloz.excercise.marsrover.MarsExpedition")
-  lazy val startUITask = addCommandAlias("ui", ";project marsroverplay; run")
+  lazy val startRoverAlias = addCommandAlias("rover", ";project marsrover; runMain org.kaloz.excercise.marsrover.MarsRover")
+  lazy val startHqAlias = addCommandAlias("hq", ";project marsrover; runMain org.kaloz.excercise.marsrover.MarsExpedition")
+  lazy val startUiAlias = addCommandAlias("ui", ";project marsroverplay; run")
 }
