@@ -75,7 +75,7 @@ Components are going to find each other in the clustered environment.
 
 If everything was OK when you start your UI you should see the moving rovers like this:
 
-![Alt text](https://github.com/lachatak/marsrover/tree/play/screenshot.png "Running rovers")
+![Alt text](screenshot.png?raw=true "Running rovers")
 
 Have a good fun!
 
