@@ -53,3 +53,34 @@ Every action type has its own required time. It makes the simulation more realis
 It is possible that two rovers collide. In this case both of them should break down and won't react on any subsequent commands.
 If a rover leaves the plateau it disappears and doesn't answer for instructions.
 After the mars rover expedition NASA should provide a report how the expedition ended. It is just a simple textual report summarizing the result. Was it successful or something unexpected happened like collusion or some rovers are missing.
+
+## Running the app ##
+
+After you have cloned the project there are 3 separate projects. All you have to do is just start sbt and deploy the app locally.
+```
+sbt
+publishLocal
+```
+
+After deploying you are ready to run the application. By default it is configured to expect 3 mars rovers to support the expedition. The configuration can be found under the marsrover project's resources.
+It means that aou have to start 3 rovers in a separate JVM. To make it easy I added 3 aliases.
+- *hq* starts the server. This should be used first.
+- *rover* start a rover. We need 3 separate console to run them. After you have started you have to provide an ide. It is going to distinguish between the rovers on the UI.
+- *ui* start a play framework which is used to track the rover movements.
+
+### Running on different hosts ###
+
+If you would like to try the app in a distributed fashion all you need is to modify the marsrover and marsroverpay configuration to point where the servers is running. All the rest is the same.
+Components are going to find each other in the clustered environment.
+
+If everything was OK when you start your UI you should see the moving rovers like this:
+
+![Alt text](https://github.com/lachatak/marsrover/tree/play/screenshot.png "Running rovers")
+
+Have a good fun!
+
+
+
+
+
+
