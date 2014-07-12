@@ -66,7 +66,7 @@ After deploying you are ready to run the application. By default it is configure
 It means that you have to start 3 rovers in a separate JVM. To make it easy I added 3 aliases.
 - **hq** starts the server. This should be used first.
 - **rover** start a rover. We need 3 separate console to run them. After you have started you have to provide a unique id. It is going to distinguish between the rovers on the UI.
-- **ui** start a play framework on port 9000 which is used to track the rover movements.
+- **ui** start a play framework which is used to track the rover movements. After starting you could open the UI by [http://localhost:9000](http://localhost:9000)
 
 ### Running on different hosts ###
 
