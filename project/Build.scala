@@ -3,7 +3,7 @@ import sbt._
 import Keys._
 
 
-object Build extends Build with BuildExtra {
+object Build extends Build {
 
   import BuildSettings._
 
