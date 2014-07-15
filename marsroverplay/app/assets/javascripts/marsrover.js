@@ -34,7 +34,6 @@ $(document).ready(function(){
 
 function onOpen(evt) {
      writeToScreen("CONNECTED");
-     websocket.send("GET POOL");
 
  }
 

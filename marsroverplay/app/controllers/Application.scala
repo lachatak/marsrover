@@ -18,7 +18,7 @@ object Application extends Controller {
     val (out, channel) = Concurrent.broadcast[String]
     val webSocketChannel = Akka.system.actorOf(WebSocketChannel.props(channel), name = "WebSocketChannel-" + request.id.toString)
     Global.clientRequestHandler ! RegisterWebSocket(webSocketChannel)
-    val in = Iteratee.foreach[String] { msg => if (msg == "GET POOL") channel.push("POOL:" + webSocketChannel.path.name);}
+    val in = Iteratee.ignore[String]
     (in, out)
   }
 }
